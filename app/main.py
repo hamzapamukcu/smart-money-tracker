@@ -11,6 +11,10 @@ import atexit
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import streamlit as st
+from src.database.connection import init_db
+
+# Ensure database tables exist before rendering pages
+init_db()
 
 st.set_page_config(
     page_title="Smart Money Tracker",
