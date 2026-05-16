@@ -10,7 +10,7 @@ from config.settings import DATABASE_URL
 from src.database.models import Base
 
 # SQLite needs check_same_thread=False; ignored for Postgres
-_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+_connect_args = {"check_same_thread": False, "timeout": 30.0} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(DATABASE_URL, connect_args=_connect_args, echo=False)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)

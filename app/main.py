@@ -19,12 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Start the background scheduler (once per process)
-if "scheduler_started" not in st.session_state:
-    from src.scheduler import start_scheduler
-    _scheduler = start_scheduler()
-    atexit.register(_scheduler.shutdown)
-    st.session_state["scheduler_started"] = True
+
 
 # Sidebar
 with st.sidebar:

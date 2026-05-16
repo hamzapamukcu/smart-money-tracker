@@ -148,8 +148,12 @@ def _get_xml_url(cik: str, accession: str) -> Optional[str]:
     return None
 
 
+def strip_ns(tag: str) -> str:
+    """Remove XML namespace prefix (e.g. '{http://...}tag' -> 'tag')."""
+    return tag.split('}', 1)[1] if '}' in tag else tag
+
 def _parse_holdings_xml(xml_text: str, fund_meta: dict, period: date, filing_date: date, accession: str) -> list[dict]:
-    """Parse 13F XML informationTable and return list of holding dicts."""
+    """Parse 13F XML informationTable and return list of holding dicts (namespace-agnostic)."""
     holdings = []
     try:
         root = ET.fromstring(xml_text)
@@ -157,30 +161,22 @@ def _parse_holdings_xml(xml_text: str, fund_meta: dict, period: date, filing_dat
         logger.error("XML parse error: %s", exc)
         return holdings
 
-    # Try both namespace variants
-    info_tables = (
-        root.findall(".//ns:infoTable", _NS)
-        or root.findall(".//{http://www.sec.gov/edgar/document/thirteenf/informationtable}infoTable")
-        or root.findall(".//infoTable")
-    )
+    # Find all infoTable elements regardless of namespace
+    info_tables = [el for el in root.iter() if strip_ns(el.tag) == "infoTable"]
 
     def _text(el, tag: str) -> Optional[str]:
-        child = el.find(tag) or el.find(f"ns:{tag}", _NS) or el.find(
-            f"{{http://www.sec.gov/edgar/document/thirteenf/informationtable}}{tag}"
-        )
-        return child.text.strip() if child is not None and child.text else None
+        for child in el.iter():
+            if strip_ns(child.tag) == tag:
+                return child.text.strip() if child.text else None
+        return None
 
     for entry in info_tables:
         cusip = _text(entry, "cusip")
         if not cusip:
             continue
 
-        shares_el = (
-            entry.find(".//shrsOrPrnAmt/sshPrnamt")
-            or entry.find(".//{http://www.sec.gov/edgar/document/thirteenf/informationtable}shrsOrPrnAmt/{http://www.sec.gov/edgar/document/thirteenf/informationtable}sshPrnamt")
-            or entry.find(".//sshPrnamt")
-        )
-        shares = int(shares_el.text) if shares_el is not None and shares_el.text else None
+        shares_raw = _text(entry, "sshPrnamt")
+        shares = int(shares_raw) if shares_raw and shares_raw.isdigit() else None
 
         value_raw = _text(entry, "value")
         value = int(value_raw) if value_raw and value_raw.isdigit() else None

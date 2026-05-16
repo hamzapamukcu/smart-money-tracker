@@ -11,8 +11,8 @@ fetch-data:
 	.venv/bin/python scripts/init_db.py
 
 run:
-	@echo "Starting the Streamlit dashboard..."
-	.venv/bin/streamlit run app/main.py
+	@echo "Starting the Streamlit dashboard and background scheduler..."
+	.venv/bin/python run.py
 
 clean:
 	@echo "Cleaning up Python cache..."

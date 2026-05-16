@@ -35,11 +35,13 @@ def main() -> None:
     init_db()
     logger.info("Tables created (or already exist).")
 
-    # 2. Senate trades
-    logger.info("Step 2/5 — Fetching Senate PTR filings…")
+    # 2. Congress trades
+    logger.info("Step 2/5 — Fetching Congress (Senate & House) filings…")
     from src.collectors.senate import fetch_senate_trades
-    n = fetch_senate_trades()
-    logger.info("Senate: %d new trades inserted.", n)
+    from src.collectors.house import fetch_house_trades
+    n_senate = fetch_senate_trades()
+    n_house = fetch_house_trades()
+    logger.info("Congress: %d Senate, %d House trades inserted.", n_senate, n_house)
 
     # 3. 13F filings
     logger.info("Step 3/5 — Fetching SEC 13F filings (this may take a few minutes)…")
