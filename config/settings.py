@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///data/tracker.db")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "tracker.db")
+
+DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 SEC_USER_AGENT: str = os.getenv("SEC_USER_AGENT", "SmartMoneyTracker user@example.com")
 STREAMLIT_SERVER_PORT: int = int(os.getenv("STREAMLIT_SERVER_PORT", "8501"))
 
