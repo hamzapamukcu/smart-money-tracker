@@ -133,17 +133,14 @@ def _get_xml_url(cik: str, accession: str) -> Optional[str]:
     if not resp:
         return None
 
-    # The index page lists files; look for the *-infotable.xml or *.xml (not -index.htm)
-    for line in resp.text.splitlines():
-        if ".xml" in line.lower() and "index" not in line.lower():
-            # Extract href from simple HTML
-            import re
-            match = re.search(r'href="([^"]+\.xml)"', line, re.IGNORECASE)
-            if match:
-                path = match.group(1)
-                if path.startswith("/"):
-                    return f"https://www.sec.gov{path}"
-                return f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_nodash}/{path}"
+    import re
+    matches = re.findall(r'href="([^"]+\.xml)"', resp.text, re.IGNORECASE)
+    
+    for path in matches:
+        if "index" not in path.lower() and "primary_doc" not in path.lower():
+            if path.startswith("/"):
+                return f"https://www.sec.gov{path}"
+            return f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_nodash}/{path}"
 
     return None
 
@@ -205,6 +202,9 @@ def fetch_13f_for_fund(fund_meta: dict, session) -> int:
     existing_periods = set(get_available_periods(session, cik))
 
     filings = _get_13f_filings_for_cik(cik)
+    # VITAL SPEEDUP: Only process the 2 most recent quarters (to compute 1 diff)
+    filings = sorted(filings, key=lambda x: x["period"], reverse=True)[:2]
+    
     inserted = 0
 
     for filing in filings:
