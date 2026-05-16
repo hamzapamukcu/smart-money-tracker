@@ -22,8 +22,14 @@ logger = logging.getLogger(__name__)
 
 def save_congress_trade(session: Session, trade: dict) -> bool:
     """Insert a congress trade, skip if filing_id already exists. Returns True if inserted."""
+    dialect = session.bind.dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+
     stmt = (
-        sqlite_insert(CongressTrade)
+        insert(CongressTrade)
         .values(**trade)
         .on_conflict_do_nothing(index_elements=["filing_id"])
     )
@@ -65,16 +71,16 @@ def get_congress_trades(
 # ---------------------------------------------------------------------------
 
 def save_fund_holding(session: Session, holding: dict) -> bool:
+    dialect = session.bind.dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+
     stmt = (
-        sqlite_insert(FundHolding)
+        insert(FundHolding)
         .values(**holding)
-        .on_conflict_do_nothing(index_elements=None)  # handled by unique constraint
-    )
-    # SQLite upsert via named constraint
-    stmt = (
-        sqlite_insert(FundHolding)
-        .values(**holding)
-        .on_conflict_do_nothing()
+        .on_conflict_do_nothing(index_elements=["fund_cik", "period_of_report", "cusip"])
     )
     result = session.execute(stmt)
     session.commit()
@@ -117,7 +123,17 @@ def get_available_periods(session: Session, fund_cik: str) -> list[date]:
 # ---------------------------------------------------------------------------
 
 def save_fund_diff(session: Session, diff: dict) -> bool:
-    stmt = sqlite_insert(FundDiff).values(**diff).on_conflict_do_nothing()
+    dialect = session.bind.dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+
+    stmt = (
+        insert(FundDiff)
+        .values(**diff)
+        .on_conflict_do_nothing(index_elements=["fund_cik", "cusip", "from_period", "to_period"])
+    )
     result = session.execute(stmt)
     session.commit()
     return result.rowcount > 0
@@ -156,9 +172,24 @@ def clear_fund_diffs(session: Session) -> None:
 # ---------------------------------------------------------------------------
 
 def save_signal(session: Session, signal: dict) -> None:
-    stmt = sqlite_insert(Signal).values(**signal).on_conflict_do_nothing()
-    session.execute(stmt)
-    session.commit()
+    dialect = session.bind.dialect.name
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert
+
+    # Signals don't have a unique constraint configured currently.
+    # To use ON CONFLICT DO NOTHING in PostgreSQL, we must specify the unique index.
+    # Let's just do a regular insert and handle IntegrityError.
+    from sqlalchemy.exc import IntegrityError
+    from src.database.models import Signal
+
+    try:
+        sig = Signal(**signal)
+        session.add(sig)
+        session.commit()
+    except IntegrityError:
+        session.rollback()
 
 
 def get_signals(session: Session, min_score: float = 0.0) -> pd.DataFrame:
