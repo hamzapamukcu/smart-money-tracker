@@ -42,15 +42,20 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🔄 Refresh Data Now"):
         with st.spinner("Running data pipeline…"):
-            from src.collectors.senate import fetch_senate_trades
-            from src.collectors.edgar import fetch_all_13f_filings
-            from src.processors.diff_13f import compute_all_diffs
-            from src.processors.signals import compute_signals
-            fetch_senate_trades()
-            fetch_all_13f_filings()
-            compute_all_diffs(rebuild=True)
-            compute_signals(rebuild=True)
-        st.success("Data refreshed!")
+            try:
+                from src.collectors.senate import fetch_senate_trades
+                from src.collectors.edgar import fetch_all_13f_filings
+                from src.processors.diff_13f import compute_all_diffs
+                from src.processors.signals import compute_signals
+                fetch_senate_trades()
+                fetch_all_13f_filings()
+                compute_all_diffs(rebuild=True)
+                compute_signals(rebuild=True)
+                st.success("Data refreshed!")
+            except Exception as e:
+                import traceback
+                st.error(f"Error details: {str(e)}")
+                st.code(traceback.format_exc())
 
 # Landing page content
 st.title("🏦 Smart Money Tracker")
