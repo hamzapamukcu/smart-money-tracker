@@ -53,7 +53,42 @@ with st.sidebar:
         st.success("Data refreshed!")
 
 # Landing page content
-st.title("Smart Money Tracker")
+st.title("🏦 Smart Money Tracker")
+st.markdown("### Professional Dashboard for Institutional & Congress Trades")
+
+# Dynamic Metrics Calculation
+import os
+import datetime
+
+def get_next_13f_deadline():
+    today = datetime.date.today()
+    year = today.year
+    deadlines = [
+        datetime.date(year, 2, 14),
+        datetime.date(year, 5, 15),
+        datetime.date(year, 8, 14),
+        datetime.date(year, 11, 14)
+    ]
+    for d in deadlines:
+        if d >= today:
+            return d.strftime("%B %d, %Y")
+    return datetime.date(year + 1, 2, 14).strftime("%B %d, %Y")
+
+db_path = os.path.join(os.path.dirname(__file__), "..", "data", "tracker.db")
+last_updated = "Never (Empty DB)"
+if os.path.exists(db_path):
+    size_kb = os.path.getsize(db_path) / 1024
+    if size_kb > 100: # Ensure it's not just an empty table schema
+        mtime = os.path.getmtime(db_path)
+        last_updated = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Last Database Update", last_updated)
+col2.metric("Next SEC 13F Deadline", get_next_13f_deadline())
+col3.metric("Tracked Institutions", "18 Top Tier")
+
+st.markdown("---")
+
 st.markdown(
     """
 Track investment patterns from **US Congress members** (STOCK Act disclosures)
@@ -63,9 +98,9 @@ Use the sidebar to navigate between pages.
 
 | Page | What you'll find |
 |---|---|
-| **Senate Trades** | Real-time STOCK Act purchase/sale feed |
-| **Fund Tracker** | 13F holdings and quarter-over-quarter changes |
-| **Signals** | Cross-referenced conviction scores |
-| **My Watchlist** | Activity alerts for your personal tickers |
+| 🏛️ **Senate Trades** | Real-time STOCK Act purchase/sale feed |
+| 🐋 **Fund Tracker** | 13F holdings and quarter-over-quarter changes |
+| 🎯 **Signals** | Cross-referenced conviction scores |
+| 👀 **My Watchlist** | Activity alerts for your personal tickers |
     """
 )

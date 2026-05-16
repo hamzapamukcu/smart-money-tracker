@@ -1,5 +1,6 @@
-data/*.db
-data/*.sqlite
+# SQLite allowed for github sync
+# data/*.db
+# data/*.sqlite
 data/user_watchlist.json
 .env
 __pycache__/
